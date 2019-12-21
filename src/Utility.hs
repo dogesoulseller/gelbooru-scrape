@@ -1,8 +1,5 @@
 module Utility (slice, filterOut, replaceSpecAmp, replaceSpecialChars) where
 
-import Data.Char
-import Data.List
-
 slice :: Int -> Int -> [a] -> [a]
 slice start end xs = take (end - start) (drop start xs)
 

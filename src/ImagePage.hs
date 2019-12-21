@@ -1,6 +1,5 @@
 module ImagePage (processImagePage) where
 
-import Utility
 import HTTPRequests
 
 import qualified Data.ByteString.Lazy.Char8 as Char8
@@ -27,6 +26,4 @@ getDownloadLink s = extractDirectLink $ head $ dropWhile (not . hasImageAnchor) 
 processImagePage :: String -> IO String
 processImagePage url = do
   pageContents <- getPageContentsWget url
-  let pageContentsLines = lines . Char8.unpack $ pageContents
-  return $ getDownloadLink pageContentsLines
-  -- return $ Char8.unpack pageContents
+  return $ getDownloadLink (lines . Char8.unpack $ pageContents)
