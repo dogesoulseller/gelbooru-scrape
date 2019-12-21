@@ -11,7 +11,6 @@ import Control.Concurrent.ParallelIO.Global
 -- TODO: Get all images from all image pages
 -- TODO: Extract set number of pages or images
 -- TODO: More safety checks
--- TODO: Extract using tags or only single page
 
 main :: IO ()
 main = do
@@ -19,7 +18,12 @@ main = do
   cliArguments <- if null _cliArguments
     then printUsage >> errorWithoutStackTrace "No arguments passed"
     else getArgs
-  let tagString = makeTagURLPart $ getTags cliArguments
-  imagePageURLs <- processListPage (listBaseURL ++ tagString)
-  downloadLink <- mapM processImagePage imagePageURLs
-  parallel_ (map downloadRaw downloadLink) >> stopGlobalPool
+
+  if isSinglePage $ getTags cliArguments
+    then do -- Download single page
+      downloadLink <- processImagePage $ getTags cliArguments
+      downloadRaw downloadLink
+    else do -- Download all from page
+      let tagString = makeTagURLPart $ getTags cliArguments
+      downloadLink <- mapM processImagePage =<< processListPage (listBaseURL ++ tagString)
+      parallel_ (map downloadRaw downloadLink) >> stopGlobalPool

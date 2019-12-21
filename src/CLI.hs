@@ -1,4 +1,6 @@
-module CLI (printUsage, getTags) where
+module CLI (printUsage, getTags, isSinglePage) where
+
+import Data.List (isPrefixOf)
 
 printUsage :: IO ()
 printUsage = mapM_ putStr ["\nUsage:\n"
@@ -10,3 +12,10 @@ printUsage = mapM_ putStr ["\nUsage:\n"
 
 getTags :: [String] -> String
 getTags = last
+
+isSinglePage :: String -> Bool
+isSinglePage s = ("https://" `isPrefixOf` s || "http://" `isPrefixOf` s) && isImgURL s
+  where
+  isImgURL [] = False
+  isImgURL ('&':'s':'=':'v':'i':'e':'w':_) = True
+  isImgURL (_:xs) = isImgURL xs
