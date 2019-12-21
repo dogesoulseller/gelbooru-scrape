@@ -1,4 +1,4 @@
-module CLI (printUsage, getTags, isSinglePage) where
+module CLI (printUsage, isSinglePage) where
 
 import Data.List (isPrefixOf)
 
@@ -9,9 +9,6 @@ printUsage = mapM_ putStr ["\nUsage:\n"
   , "To exclude a tag, prefix it with '-', eg. blue_hair,-long_hair\n"
   , "Options:\n"
   , "    None yet\n"]
-
-getTags :: [String] -> String
-getTags = last
 
 isSinglePage :: String -> Bool
 isSinglePage s = ("https://" `isPrefixOf` s || "http://" `isPrefixOf` s) && isImgURL s

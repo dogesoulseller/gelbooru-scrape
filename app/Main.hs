@@ -19,11 +19,11 @@ main = do
     then printUsage >> errorWithoutStackTrace "No arguments passed"
     else getArgs
 
-  if isSinglePage $ getTags cliArguments
+  if isSinglePage $ last cliArguments
     then do -- Download single page
-      downloadLink <- processImagePage $ getTags cliArguments
+      downloadLink <- processImagePage $ last cliArguments
       downloadRaw downloadLink
     else do -- Download all from page
-      let tagString = makeTagURLPart $ getTags cliArguments
+      let tagString = makeTagURLPart $ last cliArguments
       downloadLink <- mapM processImagePage =<< processListPage (listBaseURL ++ tagString)
       parallel_ (map downloadRaw downloadLink) >> stopGlobalPool
