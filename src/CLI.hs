@@ -23,6 +23,7 @@ data Count = Limited Int | Unlimited
 getImgCount :: [String] -> Count
 getImgCount args = if findImgOption args == 0 then Unlimited else Limited $ findImgOption args
   where
+  findImgOption :: [String] -> Int
   findImgOption [] = 0
   findImgOption (o:os)
     | o == "-c" = if null os
