@@ -7,6 +7,7 @@ import ImagePage
 import HTTPRequests
 import System.Environment
 import Control.Concurrent.ParallelIO.Global
+import Utility
 
 -- TODO: Get all images from all image pages
 -- TODO: Extract set number of pages or images
@@ -25,5 +26,9 @@ main = do
       downloadRaw downloadLink
     else do -- Download all from page
       let tagString = makeTagURLPart $ last cliArguments
-      downloadLink <- mapM processImagePage =<< processListPage (listBaseURL ++ tagString)
+      _imagePages <- processListPage (listBaseURL ++ tagString)
+      let imagePages = if null $ filterOut (== "https:>") _imagePages
+          then errorWithoutStackTrace "No posts found"
+          else filterOut (== "https:>") _imagePages
+      downloadLink <- mapM processImagePage imagePages
       parallel_ (map downloadRaw downloadLink) >> stopGlobalPool
