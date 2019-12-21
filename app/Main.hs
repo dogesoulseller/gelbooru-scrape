@@ -27,9 +27,8 @@ main = do
 
   -- Process
   if isSinglePage $ last cliArguments
-    then do -- Download single page
-      downloadLink <- processImagePage $ last cliArguments
-      downloadRaw downloadLink
+    then -- Download single page
+      downloadRaw =<< processImagePage (last cliArguments)
     else do -- Download all from page
       let maxImages = CLI.getImgCount cliArguments
       let tagString = makeTagURLPart $ last cliArguments
