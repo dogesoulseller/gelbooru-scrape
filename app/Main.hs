@@ -11,6 +11,7 @@ import Utility
 import Control.Monad
 
 -- TODO: More safety checks
+-- TODO: Allow limiting by page count instead of image count
 
 main :: IO ()
 main = do

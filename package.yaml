@@ -1,5 +1,5 @@
 name:                gelbooru-scrape
-version:             0.1.0.0
+version:             1.0.0.0
 github:              "BlackSoulSeller/gelbooru-scrape"
 license:             MIT
 author:              "Marcin Czerwonka"
@@ -15,8 +15,8 @@ description:         Please see the README on GitHub at <https://github.com/Blac
 dependencies:
 - base >= 4.7 && < 5
 - bytestring
-- process
 - parallel-io
+- http-conduit
 
 library:
   source-dirs: src

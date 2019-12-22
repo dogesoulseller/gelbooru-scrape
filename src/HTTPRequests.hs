@@ -1,12 +1,13 @@
 module HTTPRequests (getPageContentsWget, downloadRaw) where
 
 import qualified Data.ByteString.Lazy.Char8 as Char8
-import System.Process
+import Network.HTTP.Conduit
+import System.IO
+import Utility
 
 getPageContentsWget :: String -> IO Char8.ByteString
-getPageContentsWget url = do
-  (_, Just hstdout, _, _) <- createProcess (proc "wget" ["-O-", url]){ std_out = CreatePipe }
-  Char8.hGetContents hstdout;
+getPageContentsWget = simpleHttp
 
 downloadRaw :: String -> IO ()
-downloadRaw url = callProcess "wget" [url]
+downloadRaw url = withFile (lastURLComponent url) WriteMode $
+  \outFile -> Char8.hPut outFile =<< simpleHttp url
