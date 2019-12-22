@@ -6,9 +6,13 @@ import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as Char8
 import HTTPRequests
 import Utility
+import qualified CLI
 
 listBaseURL :: String
 listBaseURL = "https://gelbooru.com/index.php?page=post&s=list&tags="
+
+defaultMaxImages :: Int
+defaultMaxImages = 500
 
 findHrefVal :: String -> Int
 findHrefVal s = go s 0
@@ -56,12 +60,19 @@ trimHTML s = filterOut ("</div>" `isPrefixOf`) $ map (dropWhile isSpace) (lines 
 extractPageFromThumbnail :: String -> String
 extractPageFromThumbnail s = replaceSpecAmp . takeWhile (/= '"') $ drop (findHrefVal s) s
 
-processListPage :: String -> IO [String]
-processListPage url = do
-  res <- getPageContentsWget url
-  let trimmed = trimHTML $ Char8.unpack res
-  let pageURLs = map (("https:" ++) . extractPageFromThumbnail) trimmed
-  return pageURLs
+processListPage :: String -> CLI.Count -> IO [String]
+processListPage url imgLimit = do
+  let maxImg = case imgLimit of
+        CLI.Unlimited -> defaultMaxImages
+        CLI.Limited x -> x
+  let pagesToGet = maxImg `div` 42 + if maxImg `mod` 42 /= 0 then 1 else 0
+  let pages = map (\(x, y, z) -> x ++ y ++ show z) $ zip3 (replicate pagesToGet url) (replicate pagesToGet "&pid=") (pids pagesToGet)
+  results <- mapM getPageContentsWget pages
+  return $ take maxImg $ map (("https:" ++) . extractPageFromThumbnail) $ concatMap (trimHTML . Char8.unpack) results
+
+  where
+    pids :: Int -> [Int]
+    pids n = take n [x*42 | x <- [0..]]
 
 makeTagURLPart :: String -> String
 makeTagURLPart = replaceSeps . replaceSpecialChars

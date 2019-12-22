@@ -10,7 +10,6 @@ import Control.Concurrent.ParallelIO.Global
 import Utility
 import Control.Monad
 
--- TODO: Get all images from all image pages
 -- TODO: More safety checks
 
 main :: IO ()
@@ -33,12 +32,11 @@ main = do
       let maxImages = CLI.getImgCount cliArguments
       let tagString = makeTagURLPart $ last cliArguments
 
-      _imagePages <- processListPage (listBaseURL ++ tagString)
-      let _imagePageF = filterOut (== "https:>") _imagePages
-      let imagePages = if null _imagePageF
-          then errorWithoutStackTrace "No posts found"
-          else case maxImages of
-            CLI.Unlimited -> _imagePageF
-            CLI.Limited limit -> take limit _imagePageF
+      -- Parse image pages
+      _imagePages <- processListPage (listBaseURL ++ tagString) maxImages
+      let imagePages = filterOut (== "https:>") _imagePages
+      when (null imagePages) $ errorWithoutStackTrace "No posts found"
+
+      -- Download images
       downloadLink <- mapM processImagePage imagePages
       parallel_ (map downloadRaw downloadLink) >> stopGlobalPool
