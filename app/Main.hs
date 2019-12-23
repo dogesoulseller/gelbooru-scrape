@@ -25,10 +25,13 @@ main = do
   when (fst $ hasUnknownSettings cliArguments)
     $ printUsage >> errorWithoutStackTrace ("Unknown option " ++ snd (hasUnknownSettings cliArguments))
 
+  _outputDir <- getOutputDirectory cliArguments
+  let outputDir = _outputDir ++ "/"
+
   -- Process
   if isSinglePage $ last cliArguments
     then -- Download single page
-      downloadRaw =<< processImagePage (last cliArguments)
+      (\url -> downloadRaw url outputDir) =<< processImagePage (last cliArguments)
     else do -- Download all from page
       let maxImages = CLI.getImgCount cliArguments
       let tagString = makeTagURLPart $ last cliArguments
@@ -40,4 +43,4 @@ main = do
 
       -- Download images
       downloadLink <- mapM processImagePage imagePages
-      parallel_ (map downloadRaw downloadLink) >> stopGlobalPool
+      parallel_ (map (\url -> downloadRaw url outputDir) downloadLink) >> stopGlobalPool

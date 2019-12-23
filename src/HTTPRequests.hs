@@ -8,6 +8,6 @@ import Utility
 getPageContentsWget :: String -> IO Char8.ByteString
 getPageContentsWget = simpleHttp
 
-downloadRaw :: String -> IO ()
-downloadRaw url = withFile (lastURLComponent url) WriteMode $
+downloadRaw :: String -> String -> IO ()
+downloadRaw url outDir = withFile (outDir ++ lastURLComponent url) WriteMode $
   \outFile -> Char8.hPut outFile =<< simpleHttp url
