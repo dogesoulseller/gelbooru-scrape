@@ -1,14 +1,14 @@
 module Main where
 
-import CLI
+import qualified CLI
 import ListPage
 import ImagePage
--- import qualified Data.ByteString.Lazy.Char8 as Char8
 import HTTPRequests
-import System.Environment
-import Control.Concurrent.ParallelIO.Global
 import Utility
-import Control.Monad
+
+import System.Environment (getArgs)
+import Control.Concurrent.ParallelIO.Global (parallel_, stopGlobalPool)
+import Control.Monad (when)
 
 -- TODO: More safety checks
 -- TODO: Allow limiting by page count instead of image count
@@ -16,31 +16,28 @@ import Control.Monad
 main :: IO ()
 main = do
   -- Get command line arguments
-  _cliArguments <- getArgs
-  cliArguments <- if null _cliArguments
-    then printUsage >> errorWithoutStackTrace "No arguments passed"
-    else getArgs
+  cliArguments <- getArgs
+  when (null cliArguments) (errorWithoutStackTrace "No arguments passed")
 
   -- Check if all arguments are viable, error if they are not
-  when (fst $ hasUnknownSettings cliArguments)
-    $ printUsage >> errorWithoutStackTrace ("Unknown option " ++ snd (hasUnknownSettings cliArguments))
+  when (fst $ CLI.hasUnknownSettings cliArguments)
+    $ CLI.printUsage >> errorWithoutStackTrace ("Unknown option " ++ snd (CLI.hasUnknownSettings cliArguments))
 
-  _outputDir <- getOutputDirectory cliArguments
-  let outputDir = _outputDir ++ "/"
+  outputDir <- CLI.getOutputDirectory cliArguments >>= \d -> return $ d ++ "/"
 
   -- Process
-  if isSinglePage $ last cliArguments
-    then -- Download single page
-      (\url -> downloadRaw url outputDir) =<< processImagePage (last cliArguments)
-    else do -- Download all from page
-      let maxImages = CLI.getImgCount cliArguments
-      let tagString = makeTagURLPart $ last cliArguments
+  if CLI.isSinglePage $ last cliArguments
+  then downloadRaw outputDir =<< processImagePage (last cliArguments)
+  else do
+    let maxImages = CLI.getImgCount cliArguments
+    let tagString = makeTagURLPart $ last cliArguments
 
-      -- Parse image pages
-      _imagePages <- processListPage (listBaseURL ++ tagString) maxImages
-      let imagePages = filterOut (== "https:>") _imagePages
-      when (null imagePages) $ errorWithoutStackTrace "No posts found"
+    -- Parse image pages
+    imagePages <- processListPage (listBaseURL ++ tagString) maxImages
+      >>= \ip -> return $ filterOut (== "https:>") ip
 
-      -- Download images
-      downloadLink <- mapM processImagePage imagePages
-      parallel_ (map (\url -> downloadRaw url outputDir) downloadLink) >> stopGlobalPool
+    when (null imagePages) $ errorWithoutStackTrace "No posts found"
+
+    -- Download images
+    downloadLinks <- mapM processImagePage imagePages
+    parallel_ (map (downloadRaw outputDir) downloadLinks) >> stopGlobalPool

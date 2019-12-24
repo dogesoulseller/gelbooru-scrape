@@ -2,26 +2,23 @@ module ImagePage (processImagePage) where
 
 import HTTPRequests
 
-import qualified Data.ByteString.Lazy.Char8 as Char8
+import qualified Data.ByteString.Lazy.Char8 as Char8 (unpack)
 
 hasImageAnchor :: String -> Bool
-hasImageAnchor = go
-  where
-  go [] = False
-  go (c:cs)
-    | c == 'O' && take 13 cs == "riginal image" = True
-    | otherwise = go cs
+hasImageAnchor [] = False
+hasImageAnchor ('O':'r':'i':'g':'i':'n':'a':'l':' ':'i':'m':'a':'g':'e':_) = True
+hasImageAnchor (_:cs) = hasImageAnchor cs
 
 extractDirectLink :: String -> String
-extractDirectLink line = takeWhile (/= '"') $ drop (findHref line 0) line
+extractDirectLink line = takeWhile (/= '"') $ drop (hrefPos line 0) line
   where
-  findHref [] acc = acc
-  findHref (c:cs) acc
+  hrefPos [] acc = acc
+  hrefPos (c:cs) acc
     | c == 'h' && take 13 cs == "ref=\"https://" = acc + 6
-    | otherwise = findHref cs (acc+1)
+    | otherwise = hrefPos cs (acc+1)
 
 getDownloadLink :: [String] -> String
-getDownloadLink s = extractDirectLink $ head $ dropWhile (not . hasImageAnchor) s
+getDownloadLink s = extractDirectLink . head $ dropWhile (not . hasImageAnchor) s
 
 processImagePage :: String -> IO String
 processImagePage url = do

@@ -20,6 +20,5 @@ lastURLComponent :: String -> String
 lastURLComponent s = drop (go s 0 0) s
   where
   go [] _ final = final
-  go (c:cs) pos final
-    | c == '/' = go cs (pos+1) (pos+1)
-    | otherwise = go cs (pos+1) final
+  go ('/':cs) pos _ = go cs (pos+1) (pos+1)
+  go (_:cs) pos final = go cs (pos+1) final
