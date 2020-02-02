@@ -4,6 +4,7 @@ import qualified Data.ByteString.Lazy.Char8 as Char8 (unpack)
 
 import Data.List (isPrefixOf)
 import Data.Char (isSpace)
+import Data.Maybe (fromMaybe)
 
 import qualified CLI
 import HTTPRequests
@@ -55,9 +56,7 @@ processListPage url imgLimit = do
   pids n = take n [0,42..] :: [Int]
   posts s = slice firstDiv (firstDiv+lastDiv) s
     where
-    firstDiv = case firstThumbnail s of
-      Nothing -> error "No posts found"
-      Just x -> x
+    firstDiv = fromMaybe (error "No posts found") (firstThumbnail s)
     lastDiv = lastThumbnail $ drop firstDiv s
   hrefPos s = go s 0
     where
