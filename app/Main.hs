@@ -3,6 +3,7 @@ module Main where
 import qualified CLI
 import ListPage
 import ImagePage
+import PoolPage
 import HTTPRequests
 import Utility
 import URLFile
@@ -14,7 +15,6 @@ import System.Exit
 
 -- TODO: More safety checks
 -- TODO: Allow limiting by page count instead of image count
--- TODO: Allow downloading from pools
 
 downloadInParallel :: [String] -> String -> IO ()
 downloadInParallel downloadLinks outputDir =
@@ -47,9 +47,17 @@ main = do
 
     -- Download images
     downloadInParallel downloadLinks outputDir
-  else if CLI.isSinglePage $ last cliArguments -- Process single page
+  else if CLI.isImagePage $ last cliArguments -- Process single page
   then
     downloadRaw outputDir =<< processImagePage (last cliArguments)
+  else if CLI.isPoolPage $ last cliArguments -- Process pool page
+  then do
+    let maxImages = CLI.getImgCount cliArguments
+    imagePages <- getPoolImageURLs (last cliArguments) maxImages
+
+    downloadLinks <- parallelInterleaved $ map processImagePage imagePages
+
+    downloadInParallel downloadLinks outputDir
   else do -- Process from tags
     let maxImages = CLI.getImgCount cliArguments
     let tagString = makeTagURLPart $ last cliArguments

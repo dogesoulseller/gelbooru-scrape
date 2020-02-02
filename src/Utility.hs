@@ -1,4 +1,7 @@
-module Utility (slice, filterOut, replaceSpecAmp, replaceSpecialChars, lastURLComponent) where
+module Utility (defaultMaxImages, slice, filterOut, replaceSpecAmp, replaceSpecialChars, lastURLComponent) where
+
+defaultMaxImages :: Int
+defaultMaxImages = 500
 
 slice :: Int -> Int -> [a] -> [a]
 slice start end xs = take (end - start) (drop start xs)

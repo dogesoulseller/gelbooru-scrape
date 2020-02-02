@@ -1,4 +1,5 @@
-module CLI (printUsage, isSinglePage, Count(Limited, Unlimited), getImgCount, hasUnknownSettings, getOutputDirectory, requestsHelp, getInputFile) where
+module CLI (printUsage, isImagePage, isPoolPage, Count(Limited, Unlimited), getImgCount, hasUnknownSettings, getOutputDirectory,
+  requestsHelp, getInputFile) where
 
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
@@ -19,8 +20,15 @@ printUsage = mapM_ putStr ["\nUsage:\n"
   , "    -c = maximum count of images to get\n"
   , "    -o = output directory [default: working dir]\n"]
 
-isSinglePage :: String -> Bool
-isSinglePage s = ("https://" `isPrefixOf` s || "http://" `isPrefixOf` s) && isImgURL s
+isPoolPage :: String -> Bool
+isPoolPage s = ("https://" `isPrefixOf` s || "http://" `isPrefixOf` s) && isPoolURL s
+  where
+  isPoolURL [] = False
+  isPoolURL ('p':'a':'g':'e':'=':'p':'o':'o':'l':_) = True
+  isPoolURL (_:xs) = isPoolURL xs
+
+isImagePage :: String -> Bool
+isImagePage s = ("https://" `isPrefixOf` s || "http://" `isPrefixOf` s) && isImgURL s
   where
   isImgURL [] = False
   isImgURL ('&':'s':'=':'v':'i':'e':'w':_) = True

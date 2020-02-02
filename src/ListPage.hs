@@ -13,9 +13,6 @@ import Utility
 listBaseURL :: String
 listBaseURL = "https://gelbooru.com/index.php?page=post&s=list&tags="
 
-defaultMaxImages :: Int
-defaultMaxImages = 500
-
 isThumbPreview :: Char -> String -> Bool
 isThumbPreview c s = c == '<' && take 30 s == "div class=\"thumbnail-preview\">"
 
@@ -38,6 +35,7 @@ lastThumbnail s = findEnd (drop startOfLast s) startOfLast
   findEnd ('<':'/':'a':'>':'<':'/':'s':'p':'a':'n':'>':_) pos = pos
   findEnd (_:cs) pos = findEnd cs (pos+1)
 
+  startOfLast :: Int
   startOfLast = go s 0 0
 
 processListPage :: String -> CLI.Count -> IO [String]
