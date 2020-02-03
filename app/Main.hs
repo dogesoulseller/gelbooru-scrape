@@ -9,16 +9,19 @@ import Utility
 import URLFile
 
 import System.Environment (getArgs)
-import Control.Concurrent.ParallelIO.Global
+import Control.Concurrent.ParallelIO.Local
 import Control.Monad (when)
 import System.Exit
+import GHC.Conc (getNumCapabilities, setNumCapabilities)
 
 -- TODO: More safety checks
--- TODO: Allow limiting by page count instead of image count
 
-downloadInParallel :: [String] -> String -> IO ()
-downloadInParallel downloadLinks outputDir =
-  parallelInterleaved (map (downloadRaw outputDir) downloadLinks) >> stopGlobalPool >> exitSuccess
+getPoolThreadCount :: CLI.Count -> IO Int
+getPoolThreadCount count = case count of
+  CLI.Unlimited -> getNumCapabilities
+  CLI.Limited x -> do
+    setNumCapabilities x
+    return x
 
 main :: IO ()
 main = do
@@ -36,38 +39,43 @@ main = do
   -- Output directory
   outputDir <- CLI.getOutputDirectory cliArguments >>= \d -> return $ d ++ "/"
 
+  -- Maximum amount of images requested
+  let maxImagesDirect = CLI.getImgCount cliArguments
+  let maxImagesPage = CLI.getPageCount cliArguments
+  let maxImages = if CLI.countIsLimited maxImagesDirect then maxImagesDirect -- Has max count specified via -c
+      else if CLI.countIsLimited maxImagesPage && CLI.countIsUnlimited maxImagesDirect then maxImagesPage -- Has max count specified via -p
+      else maxImagesDirect  -- Has max count specified via both or neither
+
   -- URL list file
   let urlListFromFile = CLI.getInputFile cliArguments
 
-  if not $ null urlListFromFile  -- Process from file
-  then do
-    pages <- loadURLFile urlListFromFile
+  -- Thread count
+  requestedThreads <- getPoolThreadCount $ CLI.getThreadCount cliArguments
 
-    downloadLinks <- parallelInterleaved $ map processImagePage pages
+  withPool requestedThreads $ \threadPool ->
 
-    -- Download images
-    downloadInParallel downloadLinks outputDir
-  else if CLI.isImagePage $ last cliArguments -- Process single page
-  then
-    downloadRaw outputDir =<< processImagePage (last cliArguments)
-  else if CLI.isPoolPage $ last cliArguments -- Process pool page
-  then do
-    let maxImages = CLI.getImgCount cliArguments
-    imagePages <- getPoolImageURLs (last cliArguments) maxImages
+    if not $ null urlListFromFile then do -- Process from file
+      pages <- loadURLFile urlListFromFile
 
-    downloadLinks <- parallelInterleaved $ map processImagePage imagePages
+      downloadLinks <- parallelInterleaved threadPool $ map processImagePage pages
 
-    downloadInParallel downloadLinks outputDir
-  else do -- Process from tags
-    let maxImages = CLI.getImgCount cliArguments
-    let tagString = makeTagURLPart $ last cliArguments
+      parallelInterleaved threadPool (map (downloadRaw outputDir) downloadLinks) >> exitSuccess
+    else if CLI.isImagePage $ last cliArguments then -- Process single page
+      downloadRaw outputDir =<< processImagePage (last cliArguments)
+    else if CLI.isPoolPage $ last cliArguments then do -- Process pool page
+      imagePages <- getPoolImageURLs (last cliArguments) maxImages
 
-    -- Parse image pages
-    imagePages <- processListPage (listBaseURL ++ tagString) maxImages
-      >>= \ip -> return $ filterOut (== "https:>") ip
+      downloadLinks <- parallelInterleaved threadPool $ map processImagePage imagePages
 
-    when (null imagePages) (errorWithoutStackTrace "No posts found")
+      parallelInterleaved threadPool (map (downloadRaw outputDir) downloadLinks) >> exitSuccess
+    else do -- Process from tags
+      let tagString = makeTagURLPart $ last cliArguments
 
-    -- Download images
-    downloadLinks <- parallelInterleaved $ map processImagePage imagePages
-    downloadInParallel downloadLinks outputDir
+      -- Parse image pages
+      imagePages <- processListPage (listBaseURL ++ tagString) maxImages
+        >>= \ip -> return $ filterOut (== "https:>") ip
+
+      when (null imagePages) (errorWithoutStackTrace "No posts found")
+
+      downloadLinks <- parallelInterleaved threadPool $ map processImagePage imagePages
+      parallelInterleaved threadPool (map (downloadRaw outputDir) downloadLinks) >> exitSuccess
