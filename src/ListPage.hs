@@ -43,7 +43,7 @@ processListPage url imgLimit = do
   let maxImg = case imgLimit of
         CLI.Unlimited -> defaultMaxImages
         CLI.Limited x -> x
-  let pagesToGet = maxImg `div` 42 + if maxImg `mod` 42 /= 0 then 1 else 0
+  let pagesToGet = maxImg `div` imagesPerPage + if maxImg `mod` imagesPerPage /= 0 then 1 else 0
   let pages = map (\(x, y, z) -> x ++ y ++ show z) $ zip3 (replicate pagesToGet url) (replicate pagesToGet "&pid=") (pids pagesToGet)
   results <- mapM getPageContentsWget pages
   return $ take maxImg $ map (("https:" ++) . pageFromThumbnail) $ concatMap (trimHTML . Char8.unpack) results
@@ -51,7 +51,7 @@ processListPage url imgLimit = do
   where
   pageFromThumbnail s = replaceSpecAmp . takeWhile (/= '"') $ drop (hrefPos s) s
   trimHTML s = filterOut ("</div>" `isPrefixOf`) $ map (dropWhile isSpace) (lines $ posts s)
-  pids n = take n [0,42..] :: [Int]
+  pids n = take n [0,imagesPerPage..] :: [Int]
   posts s = slice firstDiv (firstDiv+lastDiv) s
     where
     firstDiv = fromMaybe (error "No posts found") (firstThumbnail s)

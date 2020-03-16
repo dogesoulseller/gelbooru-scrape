@@ -7,6 +7,7 @@ import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
 import System.Directory (getCurrentDirectory)
+import Utility
 
 data Count = Limited Int | Unlimited
 countIsLimited :: Count -> Bool
@@ -66,7 +67,7 @@ getImgCount args = if findImgOption args == 0 then Unlimited else Limited $ find
   findImgOption (_:os) = findImgOption os
 
 getPageCount :: [String] -> Count
-getPageCount args = if findPagesOption args == 0 then Unlimited else Limited $ (findPagesOption args) * 42
+getPageCount args = if findPagesOption args == 0 then Unlimited else Limited $ findPagesOption args * imagesPerPage
   where
   findPagesOption :: [String] -> Int
   findPagesOption [] = 0

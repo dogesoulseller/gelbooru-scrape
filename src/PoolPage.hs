@@ -33,6 +33,6 @@ getPoolImageURLs url imgLimit = do
   let imageIDs = take maxImg $ getImageIDs $ lines $ Char8.unpack poolPageContents
   let urlBases = replicate (length imageIDs) baseImageURL
 
-  let urls = map (\(x, y) -> x ++ y) $ zip urlBases imageIDs
+  let urls = zipWith (++) urlBases imageIDs
 
   return urls

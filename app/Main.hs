@@ -42,9 +42,10 @@ main = do
   -- Maximum amount of images requested
   let maxImagesDirect = CLI.getImgCount cliArguments
   let maxImagesPage = CLI.getPageCount cliArguments
-  let maxImages = if CLI.countIsLimited maxImagesDirect then maxImagesDirect -- Has max count specified via -c
-      else if CLI.countIsLimited maxImagesPage && CLI.countIsUnlimited maxImagesDirect then maxImagesPage -- Has max count specified via -p
-      else maxImagesDirect  -- Has max count specified via both or neither
+  let maxImages
+        | CLI.countIsLimited maxImagesDirect = maxImagesDirect
+        | CLI.countIsLimited maxImagesPage && CLI.countIsUnlimited maxImagesDirect = maxImagesPage
+        | otherwise = maxImagesDirect  -- Has max count specified via both or neither
 
   -- URL list file
   let urlListFromFile = CLI.getInputFile cliArguments

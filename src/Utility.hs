@@ -1,7 +1,10 @@
-module Utility (defaultMaxImages, slice, filterOut, replaceSpecAmp, replaceSpecialChars, lastURLComponent) where
+module Utility (defaultMaxImages, imagesPerPage, slice, filterOut, replaceSpecAmp, replaceSpecialChars, lastURLComponent) where
 
 defaultMaxImages :: Int
 defaultMaxImages = 500
+
+imagesPerPage :: Int
+imagesPerPage = 42
 
 slice :: Int -> Int -> [a] -> [a]
 slice start end xs = take (end - start) (drop start xs)
