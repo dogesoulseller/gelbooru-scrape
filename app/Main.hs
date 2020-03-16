@@ -16,6 +16,8 @@ import GHC.Conc (getNumCapabilities, setNumCapabilities)
 
 -- TODO: More safety checks
 
+type Arguments = [String]
+
 getPoolThreadCount :: CLI.Count -> IO Int
 getPoolThreadCount count = case count of
   CLI.Unlimited -> getNumCapabilities
@@ -23,10 +25,18 @@ getPoolThreadCount count = case count of
     setNumCapabilities x
     return x
 
-main :: IO ()
-main = do
-  -- Get command line arguments
-  cliArguments <- getArgs
+getMaxImages :: Arguments -> CLI.Count
+getMaxImages cliArgs = maxImages
+  where
+    maxImagesDirect = CLI.getImgCount cliArgs
+    maxImagesPage = CLI.getPageCount cliArgs
+    maxImages
+        | CLI.countIsLimited maxImagesDirect = maxImagesDirect
+        | CLI.countIsLimited maxImagesPage && CLI.countIsUnlimited maxImagesDirect = maxImagesPage
+        | otherwise = maxImagesDirect  -- Has max count specified via both or neither
+
+verifyCLIArgs :: Arguments -> IO Arguments
+verifyCLIArgs cliArguments = do
   when (null cliArguments) (CLI.printUsage >> errorWithoutStackTrace "No arguments passed")
 
   -- Check if all arguments are viable, error if they are not
@@ -36,22 +46,18 @@ main = do
   -- Check if help message was requested
   when (CLI.requestsHelp cliArguments) (CLI.printUsage >> exitSuccess)
 
-  -- Output directory
-  outputDir <- CLI.getOutputDirectory cliArguments >>= \d -> return $ d ++ "/"
+  return cliArguments
 
-  -- Maximum amount of images requested
-  let maxImagesDirect = CLI.getImgCount cliArguments
-  let maxImagesPage = CLI.getPageCount cliArguments
-  let maxImages
-        | CLI.countIsLimited maxImagesDirect = maxImagesDirect
-        | CLI.countIsLimited maxImagesPage && CLI.countIsUnlimited maxImagesDirect = maxImagesPage
-        | otherwise = maxImagesDirect  -- Has max count specified via both or neither
+main :: IO ()
+main = do
+  cliArguments <- verifyCLIArgs =<< getArgs
+
+  requestedThreads <- getPoolThreadCount $ CLI.getThreadCount cliArguments
+  outputDir <- CLI.getOutputDirectory cliArguments >>= \d -> return $ d ++ "/"
+  let maxImages = getMaxImages cliArguments
 
   -- URL list file
   let urlListFromFile = CLI.getInputFile cliArguments
-
-  -- Thread count
-  requestedThreads <- getPoolThreadCount $ CLI.getThreadCount cliArguments
 
   withPool requestedThreads $ \threadPool ->
 
